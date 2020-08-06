@@ -143,9 +143,11 @@ map_data("county") %>%
 # Joining Fake Data to Map Data
 
 choroplethData3 <- read_csv("./output/yourTibbleData3.csv") %>%
-  transmute(subregion = tolower(columnWithCountyNames), # County Names ARE lowercase, and are called "subregion"
+  # County Names ARE lowercase, and are called "subregion"
+  transmute(subregion = tolower(columnWithCountyNames),
             columnWithYourVariable) %>%
-  right_join(map_data("county"), by = "subregion") # "subregion" in join
+  # "subregion" in join
+  right_join(map_data("county"), by = "subregion")
 
 # Plotting the new combined data
 
