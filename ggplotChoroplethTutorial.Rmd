@@ -22,7 +22,11 @@ opts_chunk$set(tidy.opts = list(width.cutoff=75), tidy = TRUE)
 
 # How to make a ggplot Choropleth
 
+While other tools (like [choroplethr](https://cran.r-project.org/web/packages/choroplethr/index.html)) can be used to make simple choropleth maps quickly, customization can be very difficult, and more importantly, require you to learn new skills. The ggplot2 package has choropleth functionality and data built right into it, using a few pre-defined tables of data accessed from the map_data(...) function, and plotted as a geom_polygon().
+
 ## Example State Choropleth
+
+To access state-level data, **carefully** join your table to the table returned by map_data("state"), then plot the resulting polygons by latitude and longitude, using your data as the fill color. No additional steps are required (but the map will look kinda ugly).
 
 ```{r stateChoropleth, message = FALSE, fig.cap = "**Figure 1:** A Basic State Choropleth", fig.width = 7, fig.height = 5}
 # Libraries
@@ -48,7 +52,8 @@ map_data("state") %>%
 
 # Joining Fake Data to Map Data
 
-choroplethData <- read_csv("./output/yourTibbleData.csv") %>% # Load in your data
+# Load in your data
+choroplethData <- read_csv("./output/yourTibbleData.csv") %>%
   transmute(region = tolower(columnWithStateNames),
             # Get rid of everything except the state/country/county and the variable to use for your map
             columnWithYourVariable) %>%
@@ -63,7 +68,7 @@ choroplethData <- read_csv("./output/yourTibbleData.csv") %>% # Load in your dat
 
 # Your table with the shape data and the values of interest
 ggplot(choroplethData,
-      # Latitude
+           # Latitude
        aes(x = long,
            # Longitude
            y = lat,
@@ -80,6 +85,8 @@ ggplot(choroplethData,
 ```
 
 ## Example Country Choropleth
+
+To make a country choropleth, provide "world" to the map_data(...) function. Using ggplot themes and other layers can make the plot look far less ugly.
 
 ```{r countryChoropleth, message = FALSE, fig.cap = "**Figure 2:** A Better Country Choropleth", fig.width = 7, fig.height = 5}
 # Fake Data
@@ -129,6 +136,8 @@ ggplot(choroplethData2,
 ```
 
 ## Example County Choropleth
+
+Using the "county" map, and this time matching by subregion, allows for a very detailed look at the US. More advanced use of theme layers can result in something that's actually worth keeping.
 
 ```{r countyChoropleth, message = FALSE, fig.cap = "**Figure 3:** A Much Better County Choropleth", fig.width = 7, fig.height = 4.55, fig.align = "center"}
 # Fake Data
