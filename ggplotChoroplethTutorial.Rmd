@@ -1,0 +1,179 @@
+---
+title: ggplot Choropleth Tutorial
+output:
+    html_document:
+      toc: TRUE
+      toc_float: FALSE
+      number_sections: TRUE
+      highlight: breezedark
+---
+
+<style>
+body {
+  background-color: #221144;
+  color: #FFEEEE
+}
+</style>
+
+```{r knitting, echo = FALSE, output = 'asis'}
+library(knitr)
+opts_chunk$set(tidy.opts = list(width.cutoff=75), tidy = TRUE)
+```
+
+# How to make a ggplot Choropleth
+
+## Example State Choropleth
+
+```{r stateChoropleth, message = FALSE, fig.cap = "**Figure 1:** A Basic State Choropleth", fig.width = 7, fig.height = 5}
+# Libraries
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+
+# Fake Data
+
+#  Creating a tibble full of fake data
+map_data("state") %>%
+  # Giving it a state column
+  select(columnWithStateNames = region) %>%
+  # Eliminates spares
+  distinct() %>%
+  # Helps with random number generator
+  rowwise() %>%
+  # Filling it with fake data randomly assigned from 0 - 100
+  mutate(columnWithYourVariable = runif(1, 0.0, 100.0)) %>%
+  # Saving it as a csv
+  write_csv("./output/yourTibbleData.csv")
+
+# Joining Fake Data to Map Data
+
+choroplethData <- read_csv("./output/yourTibbleData.csv") %>% # Load in your data
+  transmute(region = tolower(columnWithStateNames),
+            # Get rid of everything except the state/country/county and the variable to use for your map
+            columnWithYourVariable) %>%
+  # This combines your data with the data from ggplot, keeping only things where the region name is an exact match
+  # which is why the region name had to be converted to lowercase with tolower()
+  right_join(map_data("state"), by = "region") 
+# The map data contains information on the shape of states/countries/counties and their latitude and longitude
+# It uses these to create a bunch of polygons
+# NOTE: Alaska and Hawaii are NOT included, but the District of Columbia is, due to geography
+
+# Plotting the new combined data
+
+# Your table with the shape data and the values of interest
+ggplot(choroplethData,
+      # Latitude
+       aes(x = long,
+           # Longitude
+           y = lat,
+           # Colors by the value of the variable
+           fill = columnWithYourVariable,
+           # Used for making the states/countries/counties
+           group = group)) +
+  # Used to draw the shapes
+  geom_polygon() +
+  # Fixes the aspect ratio
+  coord_map() +
+  # Saves your map
+  ggsave("./figures/fakeStateChoropleth.png")
+```
+
+## Example Country Choropleth
+
+```{r countryChoropleth, message = FALSE, fig.cap = "**Figure 2:** A Better Country Choropleth", fig.width = 7, fig.height = 5}
+# Fake Data
+
+map_data("world") %>%
+  select(columnWithCountryNames = region) %>%
+  distinct() %>%
+  rowwise() %>%
+  mutate(columnWithYourVariable = runif(1, 0.0, 100.0)) %>%
+  write_csv("./output/yourTibbleData2.csv")
+
+# Joining Fake Data to Map Data
+
+choroplethData2 <- read_csv("./output/yourTibbleData2.csv") %>%
+  # Country Names are NOT lowercase
+  transmute(region = columnWithCountryNames,
+            columnWithYourVariable) %>%
+  right_join(map_data("world"), by = "region")
+
+# Plotting the new combined data
+
+ggplot(choroplethData2,
+       aes(x = long,
+           y = lat,
+           fill = columnWithYourVariable,
+           group = group)) +
+  geom_polygon() +
+  # Bad things happen if you try to use the coord_map() function here
+  coord_quickmap() +
+  # Additional themes and layers for reference
+  scale_fill_gradient2(name = "Value",
+                      low = "blue",
+                      mid = "#880088",
+                      midpoint = 50.0,
+                      high = "red",
+                      na.value = "black") +
+  theme_linedraw() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid= element_blank(),
+        legend.position = "bottom") +
+  xlab("") +
+  ylab("") +
+  labs(title = "Fake Country Choropleth") +
+  ggsave("./figures/fakeCountryChoropleth.png")
+```
+
+## Example County Choropleth
+
+```{r countyChoropleth, message = FALSE, fig.cap = "**Figure 3:** A Much Better County Choropleth", fig.width = 7, fig.height = 4.55, fig.align = "center"}
+# Fake Data
+
+map_data("county") %>%
+  select(columnWithCountyNames = subregion) %>%
+  distinct() %>%
+  rowwise() %>%
+  mutate(columnWithYourVariable = runif(1, 0.0, 100.0)) %>%
+  write_csv("./output/yourTibbleData3.csv")
+
+# Joining Fake Data to Map Data
+
+choroplethData3 <- read_csv("./output/yourTibbleData3.csv") %>%
+  transmute(subregion = tolower(columnWithCountyNames), # County Names ARE lowercase, and are called "subregion"
+            columnWithYourVariable) %>%
+  right_join(map_data("county"), by = "subregion") # "subregion" in join
+
+# Plotting the new combined data
+
+ggplot(choroplethData3,
+       aes(x = long,
+           y = lat,
+           fill = columnWithYourVariable,
+           group = group)) +
+  geom_polygon() +
+  coord_map() + 
+  # Additional themes and layers for reference
+  scale_fill_gradient(name = "Value",
+                      low = "yellow",
+                      high = "magenta",
+                      na.value = "black") +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "#444444"),
+        plot.margin = unit(c(0, 0, 0, 0), "mm"),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid= element_blank(),
+        legend.position = "bottom") +
+  xlab("") +
+  ylab("") +
+  labs(title = "Fake County Choropleth") +
+  # Aspect Ratio of ~ 15.28:9 when using coord_map on the continental US
+  # The exact numbers are unimportant
+  # A different aspect ratio will give whitespace in the saved image
+  ggsave("./figures/fakeCountyChoropleth.png", width = 15.28, height = 9)
+```
